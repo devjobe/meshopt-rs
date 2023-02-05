@@ -1,6 +1,7 @@
 use crate::{ffi, DecodePosition, VertexDataAdapter};
 use std::mem;
 
+pub const SIMPLIFY_LOCKED_BORDER: u32 = ffi::meshopt_SimplifyLockBorder as u32;
 /// Reduces the number of triangles in the mesh, attempting to preserve mesh
 /// appearance as much as possible.
 ///
@@ -27,7 +28,8 @@ pub fn simplify(
             vertices.vertex_count,
             vertices.vertex_stride,
             target_count,
-            target_error,
+            target_error,            
+            0,
             std::ptr::null_mut(),
         )
     };
@@ -35,6 +37,34 @@ pub fn simplify(
     result
 }
 
+pub fn simplify_with(
+    indices: &[u32],
+    vertices: &VertexDataAdapter<'_>,
+    target_count: usize,
+    target_error: f32,
+    options: u32,
+) -> Vec<u32> {
+    let vertex_data = vertices.reader.get_ref();
+    let vertex_data = vertex_data.as_ptr().cast::<u8>();
+    let positions = unsafe { vertex_data.add(vertices.position_offset) };
+    let mut result: Vec<u32> = vec![0; indices.len()];
+    let index_count = unsafe {
+        ffi::meshopt_simplify(
+            result.as_mut_ptr().cast(),
+            indices.as_ptr().cast(),
+            indices.len(),
+            positions.cast::<f32>(),
+            vertices.vertex_count,
+            vertices.vertex_stride,
+            target_count,
+            target_error,            
+            options,
+            std::ptr::null_mut(),
+        )
+    };
+    result.resize(index_count, 0u32);
+    result
+}
 /// Reduces the number of triangles in the mesh, attempting to preserve mesh
 /// appearance as much as possible.
 ///
@@ -63,6 +93,7 @@ pub fn simplify_decoder<T: DecodePosition>(
             mem::size_of::<f32>() * 3,
             target_count,
             target_error,
+            0,
             std::ptr::null_mut(),
         )
     };

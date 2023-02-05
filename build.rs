@@ -66,6 +66,7 @@ fn generate_bindings(output_file: &str) {
         .impl_debug(true)
         .blocklist_type("__darwin_.*")
         .allowlist_function("meshopt.*")
+        .allowlist_type("*")        
         .trust_clang_mangling(false)
         .layout_tests(false)
         .size_t_is_usize(true)
